@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+.gradle_home/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Fabric/Minecraft
+run/
+logs/
+
+# Local JARs (dependencies) - keep these out of version control
+libs/
+*.jar
+!gradle-wrapper.jar
+
+# Decompiled source references (not project code)
+RangedWeaponAPI-*/
+mattercannon/
+appliedenergistics2-*.jar
