@@ -53,4 +53,4 @@ The compiled JAR can be found in `build/libs/`.
 ---
 
 ### License
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
