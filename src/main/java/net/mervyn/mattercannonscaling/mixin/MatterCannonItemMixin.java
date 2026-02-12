@@ -23,15 +23,7 @@ public abstract class MatterCannonItemMixin {
         throw new AssertionError();
     }
 
-    /**
-     * Redirects the getDamageFromPenetration call inside standardAmmo to apply
-     * config scaling and attribute-based bonuses.
-     *
-     * CRITICAL: getDamageFromPenetration is a STATIC method (invokestatic in
-     * bytecode).
-     * For static method redirects, the handler must NOT have an instance parameter.
-     * Parameters are: [target method args] + [captured enclosing method args].
-     */
+
     @Redirect(method = "standardAmmo", at = @At(value = "INVOKE", target = "Lappeng/items/tools/powered/MatterCannonItem;getDamageFromPenetration(F)I"), remap = false)
     private int modifyCalculatedDamage(
             // getDamageFromPenetration's argument (static call — NO instance param):
@@ -44,8 +36,12 @@ public abstract class MatterCannonItemMixin {
         int baseDamage = getDamageFromPenetration(penetration);
 
         ScalingConfig config = ScalingConfig.get();
-        double scaled = (baseDamage * config.damageMultiplier) + config.damageAdditive;
 
+        // 1. Base calculation: (base * multiplier)
+        double scaledBase = baseDamage * config.damageMultiplier;
+
+        // 2. Attribute bonus calculation
+        double attributeBonus = 0.0;
         if (p != null) {
             for (ScalingConfig.CachedEntry entry : config.cachedEntries) {
                 EntityAttribute attr = Registries.ATTRIBUTE.get(entry.attributeId());
@@ -58,18 +54,27 @@ public abstract class MatterCannonItemMixin {
                     continue;
                 }
 
-                double value = inst.getValue();
+                double attrValue = inst.getValue();
                 switch (entry.op()) {
-                    case ADD -> scaled += value * entry.multiplier();
-                    case MULTIPLY -> scaled *= 1.0 + (value * entry.multiplier());
+                    case ADD -> attributeBonus += attrValue * entry.multiplier();
+                    // MULTIPLY in this context adds a percentage of the *scaled base damage* based
+                    // on the attribute
+                    // e.g. if attribute is 10 and multiplier is 0.1 (10%), add 100% of scaledBase
+                    // to the bonus?
+                    // Or if multiplier is 0.01 (1%), add 10% of scaledBase?
+                    // Logic: bonus += scaledBase * (attrValue * multiplier)
+                    case MULTIPLY -> attributeBonus += scaledBase * (attrValue * entry.multiplier());
                 }
             }
         }
 
-        int finalDamage = Math.max(0, (int) Math.round(scaled));
+        // 3. Final summation: scaledBase + additive + attributeBonus
+        double finalValue = scaledBase + config.damageAdditive + attributeBonus;
+
+        int finalDamage = Math.max(0, (int) Math.round(finalValue));
         MatterCannonScaling.LOGGER.debug(
-                "MatterCannon damage: base={}, scaled={}, final={}",
-                baseDamage, scaled, finalDamage);
+                "MatterCannon damage: base={}, scaledBase={}, additive={}, attrBonus={}, final={}",
+                baseDamage, scaledBase, config.damageAdditive, attributeBonus, finalDamage);
         return finalDamage;
     }
 }
