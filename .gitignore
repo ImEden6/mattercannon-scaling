@@ -3,6 +3,7 @@
 .gradle_home/
 build/
 out/
+bin/
 
 # IDE
 .idea/

@@ -44,6 +44,7 @@ public class ScalingConfig {
 
     private static final com.google.gson.Gson GSON = new com.google.gson.GsonBuilder()
             .setPrettyPrinting()
+            .disableHtmlEscaping()
             .create();
 
     public static synchronized ScalingConfig get() {
